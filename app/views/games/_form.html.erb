@@ -1,0 +1,49 @@
+<script>
+  $(function () {
+    $("#set1,#set2").on("click", function () {
+      // Find if it's the first or second set of coordinates
+      var num = this.id[3];
+      navigator.geolocation.getCurrentPosition(function (position) {
+        $("#game_lat" + num).val(position.coords.latitude);
+        $("#game_lng" + num).val(position.coords.longitude);
+      });
+    });
+  });
+</script>
+
+<%= form_for(game) do |f| %>
+  <% if game.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(game.errors.count, "error") %> prohibited this game from being saved:</h2>
+
+      <ul>
+      <% game.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :name %>
+    <%= f.text_field :name %>
+  </div>
+
+  <div class="field">
+    Position 1: <%= f.text_field :lat1 %> / <%= f.text_field :lng1 %>
+    <input type="button" id="set1" value="Set">
+  </div>
+
+  <div class="field">
+    Position 2: <%= f.text_field :lat2 %> / <%= f.text_field :lng2 %>
+    <input type="button" id="set2" value="Set">
+  </div>
+
+  <div class="field">
+    <%= f.number_field :columns %> x <%= f.number_field :rows %>
+  </div>
+
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

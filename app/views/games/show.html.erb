@@ -1,0 +1,130 @@
+<!-- Full Tilt JS library from https://github.com/richtr/Full-Tilt-JS -->
+<script src="/assets/fulltilt-min.js"></script>
+
+<script>
+  var compassSpan = document.getElementById("compass");
+  var heading = 0.0;
+  // Obtain a new *world-oriented* Full Tilt JS DeviceOrientation Promise
+  var promise = FULLTILT.getDeviceOrientation({ type: 'world' });
+
+  // Wait for Promise result
+  promise.then(function(deviceOrientation) {
+    // Apparently device orientation events are supported, so register a callback
+    deviceOrientation.listen(function() {
+      // Get the current *screen-adjusted* device orientation angles
+      var currentOrientation = deviceOrientation.getScreenAdjustedEuler();
+      console.log(currentOrientation);
+      // Calculate the current compass heading that the user is facing (in degrees)
+      heading = 360 - currentOrientation.alpha;
+
+      compassSpan.innerHTML = heading.toString();
+    });
+
+  }).catch(function(errorMessage) {
+    // Device Orientation Events are not supported
+    console.log(errorMessage);
+  });
+
+  // Other Lat / Lng stuff
+  $(function () {
+    var authenticity_token = $("meta[name=csrf-token]").prop("content");
+    var content = $("#content");
+    // Begin sending our location every 3 seconds
+    function sendLocation() {
+      navigator.geolocation.getCurrentPosition(function (position) {
+        $.post("/games/<%= @game.id %>/positions", {
+          position: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          },
+          authenticity_token: authenticity_token
+        }).done(function (result) {
+          var colors = ["red", "blue", "orange", "green", "purple", "teal", "brown"];
+          for (var i = 0; i < result.length; ++i) {
+            var player = result[i];
+            console.log(player.id, player);
+            // See if this player DIV is yet there
+            // This is a touch faster than jQuery
+            var div = document.getElementById("player" + player.id);
+            if (div == null) {
+              div = document.createElement("div");
+              div.id="player" + player.id;
+              div.className = "player";
+              div.style.backgroundColor = colors[i];
+              div.innerHTML = player.name;
+              content.append(div);
+            }
+            div.style.left = player.left.toString() + "%";
+            div.style.top = player.top.toString() + "%";
+          };
+        }).fail(function () {
+          console.log("AJAX ERROR!");
+        }).always(function () {
+          setTimeout(sendLocation, 3000);
+        });
+      });
+    }
+
+    sendLocation();
+  });
+</script>
+
+<style>
+  body {
+    margin: 0;
+  }
+  h2 {
+    display: inline-block;
+  }
+  #content {
+    position: absolute;
+    height: 80%;
+    width: 95%;
+    left: 2.5%;
+  }
+  .grid {
+    position: absolute;
+    border-collapse: collapse;
+    width: 100%;
+    height: 100%;
+  }
+  .grid tr > td {
+    border-top: 1px solid #202020;
+    border-left: 1px solid #202020;
+    height: <%= (80.0 / @game.rows).to_s %>%;
+  }
+  .grid tr:last-child > td {
+    border-bottom: 1px solid #202020;
+  }
+  .grid tr > td:last-child {
+    border-right: 1px solid #202020;
+  }
+  .player {
+    position: absolute;
+    font-size: 10pt;
+  }
+</style>
+
+<span id="compass"></span><br />
+
+<% unless notice.blank? %>
+  <p id="notice"><%= notice %></p>
+<% end %>
+
+<h2><%= @game %></h2>
+<strong>Lat / Lng:</strong> <%= @game.lat %> / <%= @game.lng %>
+
+<div id="content">
+  <table class="grid">
+    <% @game.rows.times do %>
+      <tr>
+        <% @game.columns.times do %>
+          <td></td>
+        <% end %>
+      </tr>
+    <% end %>
+  </table>
+</div>
+
+<%#= link_to 'Back', games_path %>
