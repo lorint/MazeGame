@@ -37,8 +37,18 @@ if rails_env == "development"
       bind "ssl://#{ip}:3000?key=#{ENV['HOME']}/.ssh/server#{snake_ip}.key&cert=#{ENV['HOME']}/.ssh/server#{snake_ip}.crt"
       # Make sure server##_##_##_##.crt and server##_##_##_##.key are present
       unless File.file?("#{ENV['HOME']}/.ssh/server#{snake_ip}.key") && File.file?("#{ENV['HOME']}/.ssh/server#{snake_ip}.crt")
-        puts "Creating key and crt file for #{ip}"
-        `openssl req -new -newkey rsa:2048 -sha1 -days 365 -nodes -x509 -subj "/C=UK/ST=Hertfordshire/L=Hoddesdon/O=SW/CN=#{ip}" -keyout ~/.ssh/server#{snake_ip}.key -out ~/.ssh/server#{snake_ip}.crt`
+        puts "Creating crt and key file for #{ip}"
+        `openssl req -new -newkey rsa:2048 -sha1 -days 365 -nodes -x509 -subj "/CN=#{ip}" -keyout ~/.ssh/server#{snake_ip}.key -out ~/.ssh/server#{snake_ip}.crt`
+        puts "\nYou can avoid NET::ERR_CERT_AUTHORITY_INVALID errors on OSX client machines by copying ~/.ssh/server#{snake_ip}.crt to them and run:"
+        puts "sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ~/.ssh/server#{snake_ip}.crt\n\n"
+        puts "or for Ubuntu and Debian Linux clients run:"
+        puts "sudo cp server#{snake_ip}.crt /usr/local/share/ca-certificates/server#{snake_ip}.crt"
+        puts "sudo update-ca-certificates\n\n"
+        puts "or for Windows clients run:"
+        puts "certutil -addstore -f \"ROOT\" server#{snake_ip}.crt\n\n"
+        puts "or for Android Ice Cream Sandwich and later import from:"
+        puts "Settings -> Lock screen and security -> Other security settings -> Install from device storage\n\n"
+        puts "or for iOS put the server#{snake_ip}.crt file in /public and install by navigating to https://#{ip}:3000/server#{snake_ip}.crt and choosing \"Install\"\n\n"
       end
     end
   rescue => e
